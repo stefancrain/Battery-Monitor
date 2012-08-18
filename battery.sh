@@ -46,5 +46,5 @@ else
 fi
 
 ### Output 
-#echo $Batt_rem_perc","$Batt_Cycle","$Batt_Charge_cap","$Batt_Charge_rem","$Batt_Status","$Ram_Perc
-echo 'array("percent"=>"'$Batt_remperc'","cycle"=>"'$Batt_Cycle'","capacity"=>"'$Batt_Charge_cap'","remaining"=>"'$Batt_Charge_rem'","activity"=>"'$Batt_Status'","Ram_Usage"=>"'$Ram_Perc'")' 
+echo $Batt_rem_perc","$Batt_Cycle","$Batt_Charge_cap","$Batt_Charge_rem","$Batt_Status","$Ram_Perc
+#echo 'array("percent"=>"'$Batt_rem_perc'","cycle"=>"'$Batt_Cycle'","capacity"=>"'$Batt_Charge_cap'","remaining"=>"'$Batt_Charge_rem'","activity"=>"'$Batt_Status'","Ram_Usage"=>"'$Ram_Perc'")' 
