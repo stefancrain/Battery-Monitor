@@ -6,16 +6,18 @@ $bashArray = array();
 $finalArray = array();
 $bashArray = explode(',', $bash);
 
-$finalArray['BatteryChargePercent']  = $bashArray[0];
+$finalArray['BatteryPercent']  = $bashArray[0];
 $finalArray['BatteryCycle']  = $bashArray[1];
 $finalArray['BatteryCapacity']  = $bashArray[2];
 $finalArray['BatteryRemaining']  = $bashArray[3];
 $finalArray['BatteryStatus']  = $bashArray[4];
-$finalArray['RamFree']  = $bashArray[5];
-$finalArray['BatteryLowPower']  = $bashArray[6];
-$finalArray['CpuLoad']  = $bashArray[7];
-$finalArray['CpuPercentFree']  = $bashArray[8];
-$finalArray['CpuPercentUser']  = $bashArray[9];
-$finalArray['CpuPercentSystem']  = $bashArray[10];
+$finalArray['RamTotal']  = $bashArray[5];
+$finalArray['RamUsed']  = $bashArray[6];
+$finalArray['RamUsedPercent']  = $bashArray[7];
+$finalArray['BatteryWarn']  = $bashArray[8];
+$finalArray['CpuLoad']  = $bashArray[9];
+$finalArray['CpuFree']  = $bashArray[10];
+$finalArray['CpuUser']  = $bashArray[11];
+$finalArray['CpuSystem']  = $bashArray[12];
 
 echo json_encode($finalArray);

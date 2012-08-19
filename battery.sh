@@ -3,19 +3,19 @@
 #Name of the user.
 name=`whoami`
 
-Ram_Total=`sysctl -n hw.memsize | awk '{print $0/1073741824}'`
-Ram_Usage=`top -u -R -l1 | grep 'PhysMem' | cut -c 65-68 | awk '{print $0/1024}'`
-Ram_Perc=$(echo "$Ram_Usage"/"$Ram_Total"*100 | bc -l)
-Ram_Perc=$(echo "$Ram_Perc" |cut -c 1-5)
-
-Cpu_Load_Average=`w | head -n1 | awk '{print $10}'`
-# Cpu_Number=`sysctl hw.ncpu | awk '{print $2}'`
-# Cpu_Number=$(echo "$Cpu_Number" |cut -c 1-4)
-
 # Using -l2 .. tail -n1 because -l1 gave me shitty results
-Cpu_Perc_Free=`top -l2 -F -R -u | grep "CPU usage" | tail -n1|awk '{print $7}' |cut -c 1-5`
-Cpu_Perc_User=`top -l2 -F -R -u | grep "CPU usage" | tail -n1|awk '{print $3}' |cut -c 1-5`
-Cpu_Perc_Sys=`top -l2 -F -R -u | grep "CPU usage" | tail -n1|awk '{print $5}' |cut -c 1-5`
+Top=$(top -l2 -F -R -u)
+
+Ram_Total=`sysctl -n hw.memsize | awk '{print $0/1048576}'`
+Ram_Used=$(echo "$Top" | grep 'PhysMem' | tail -n1 | awk '{print $8}'| sed 's/M//g')
+Ram_Perc=$(echo "$Ram_Used"/"$Ram_Total"*100 | bc -l)
+Ram_Perc=$(echo "$Ram_Perc" | cut -c 1-5 )
+
+Cpu_Load_Average=`w | head -n1 | awk '{print $10}'` 
+
+Cpu_Perc_Free=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $7}' |cut -c 1-5)
+Cpu_Perc_User=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $3}' |cut -c 1-5)
+Cpu_Perc_Sys=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $5}' |cut -c 1-5)
 
 
 ## System info Battery deets 
@@ -56,4 +56,4 @@ else
 fi
 
 ### Output 
-echo $Batt_rem_perc","$Batt_Cycle","$Batt_Charge_cap","$Batt_Charge_rem","$Batt_Status","$Ram_Perc","$Batt_Warn","$Cpu_Load_Average","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys
+echo $Batt_rem_perc","$Batt_Cycle","$Batt_Charge_cap","$Batt_Charge_rem","$Batt_Status","$Ram_Total","$Ram_Used","$Ram_Perc","$Batt_Warn","$Cpu_Load_Average","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys
