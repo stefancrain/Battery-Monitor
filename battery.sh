@@ -1,81 +1,181 @@
 #!/bin/bash
 # A better battery meter for everyone
-unamestr=`uname`
+# Stefan Crain (stefancrain@gmail.com)
+# github.com/stefancrain
 
-## Level of charge in % to warn the user at.
+# common Vars  
+
+# what os you on ?
+Os=`uname`
+
+## Level of charge in mins to warn the user at.
 Batt_Warn_at="11"
 Batt_Warn="OK"
-clear=''
-# min time output 
+
+# standard time formatting
 min_mins=2
 min_hours=1
 
+# vars for gloabl quick functions
+Clear=`clear`
 Here=`pwd`
 
-function get_battery_status {
-if [[ "$unamestr" == 'Linux' ]]; then
+#   # functions area    
 
-    # not close to finished yet
-    Top=$(top -n1)
+function battery_setup {
+    # Setup things for the script
+    mkdir logs
+}
 
-    Cpu_Perc_Free=$(echo "$Top" | grep "Cpu(s)" | awk '{print $5}'  |sed 's/[^0-9.]//g')
-    Cpu_Perc_User=$(echo "$Top" | grep "Cpu(s)" | tail -n1|awk '{print $3}' |sed 's/[^0-9.]//g')
-    Cpu_Perc_Sys=$(echo "$Top" | grep "Cpu(s)" | tail -n1|awk '{print $5}' |cut -c 1-5 |sed 's/%//g')
+function battery_getStatus {
+    # start timer 
+    start_time=`date +%s`
 
-    # extra line in the ram for ram used
-    Ram_Total=`cat /proc/meminfo | grep "MemTotal:" | sed 's/kB//g' | awk '{print $NF}'`
-    Ram_Free=`cat /proc/meminfo | grep "MemFree:" | sed 's/kB//g' | awk '{print $NF}'`
-    Ram_Used=$(echo "$Ram_Total"-"$Ram_Free" | bc -l)
+    # *nix or Mac
+    if [[ "$Os" == 'Linux' ]]; then
 
-    ## Checking to see about battery status 
-    Batt_Status=`cat /proc/acpi/battery/BAT0/info | grep 'charging state:' | awk '{print $NF}'`
+        Top=$(top -n1)
 
-    ## Charge details 
-    Batt_Charge_rem=`cat /proc/acpi/battery/BAT0/info | grep 'last full capacity:' | sed 's/[a-z: ]\+//gI'`
-    Batt_Charge_cap=`cat /proc/acpi/battery/BAT0/state | grep 'remaining capacity:' | sed 's/[a-z: ]\+//gI'`
-    Batt_Cycle=`cat /proc/acpi/battery/BAT0/info | grep 'cycle count:' | sed 's/[a-z: ]\+//gI'`
+        Cpu_Perc_Free=$(echo "$Top" | grep "Cpu(s)" | awk '{print $5}'  |sed 's/[^0-9.]//g')
+        Cpu_Perc_User=$(echo "$Top" | grep "Cpu(s)" | tail -n1|awk '{print $3}' |sed 's/[^0-9.]//g')
+        Cpu_Perc_Sys=$(echo "$Top" | grep "Cpu(s)" | tail -n1|awk '{print $5}' |cut -c 1-5 |sed 's/%//g')
 
-elif [[ "$unamestr" == 'Darwin' ]]; then
-    # Using -l2 because -l1 gave me results with higher then exected load for the 1st second, then less after that
-    Top=$(top -l2 -F -R -u)
-   
-    Cpu_Perc_Free=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $7}' |cut -c 1-5 |sed 's/%//g')
-    Cpu_Perc_User=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $3}' |cut -c 1-5 |sed 's/%//g')
-    Cpu_Perc_Sys=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $5}' |cut -c 1-5 |sed 's/%//g')
+        # Display
+        Display_Brightnes=$( cat /proc/acpi/video/VGA/LCD/brightness | awk '{print $NF}')
+        # Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l)
+        Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l|cut -d'.' -f1)
+        if [[ "$Display_Brightnes_perc" == "0" ]]
+            then Display_Brightnes_perc="0"
+        fi
 
-    # Display
-    Display_Brightnes=$( "$Here"/brightness -l |grep brightness|awk '{print $NF}')
-    # Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l)
-    Display_Brightnes_perc=$(echo "$Display_Brightnes"*100| bc -l|cut -c 1-5 )
+        # Wifi 
+        Wifi_Status=$(lshw -C network | grep -E '(description: Wireless interface)' echo Connected ||  echo No connection)
+        # Wifi_device=$(networksetup -listallhardwareports | grep -E '(Wi-Fi|AirPort)' -A 1 | grep -o "en.")
+        # Wifi_Status=$(networksetup -getairportpower "$Wifi_device"| awk '{print $NF}')
+        # Wifi_Connected=`networksetup -getinfo Wi-Fi | grep -c 'IP address:'` # 1 = no connection, 2 = connected to network
+        # Ping=`curl -s www.google.com > /dev/null &&  echo Connected ||  echo No connection` # not really a ping
+        Ping=`wget -q -T1 www.google.com > /dev/null &&  echo Connected ||  echo No connection` # not really a ping
 
-    # Wifi 
-    Wifi_device=$(networksetup -listallhardwareports | grep -E '(Wi-Fi|AirPort)' -A 1 | grep -o "en.")
-    Wifi_Status=$(networksetup -getairportpower "$Wifi_device"| awk '{print $NF}')
-    Wifi_Connected=`networksetup -getinfo Wi-Fi | grep -c 'IP address:'` # 1 = no connection, 2 = connected to network
-    Ping=`curl -s www.google.com > /dev/null &&  echo Connected ||  echo No connection`
+        # extra line in the ram for ram used
+        Ram_Total=`cat /proc/meminfo | grep "MemTotal:" | sed 's/kB//g' | awk '{print $NF}'`
+        Ram_Free=`cat /proc/meminfo | grep "MemFree:" | sed 's/kB//g' | awk '{print $NF}'`
+        Ram_Used=$(echo "$Ram_Total"-"$Ram_Free" | bc -l)
 
-    # free and used are backward here 
-    Ram_Total=`sysctl -n hw.memsize | awk '{print $0/1048576}'`
-    Ram_Used=$(echo "$Top" | grep 'PhysMem' | tail -n1 | awk '{print $8}'| sed 's/M//g')
-    Ram_Free=$(echo "$Ram_Total"-"$Ram_Used" | bc -l)
- 
-    ## System info Battery deets 
-    Batt_Sysprofile_Stuff=$(system_profiler SPPowerDataType)
+        # Display 
+        Display_Brightnes=$(cat /proc/acpi/video/VGA/LCD/brightness | awk '{print $NF}')
+        # Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l)
+        Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l|cut -d'.' -f1)
+        if [[ "$Display_Brightnes_perc" == "0" ]]
+            then Display_Brightnes_perc="0"
+        fi
 
-    ## Checking to see about battery status - Yes / No's
-    Batt_Pluggedin=$(echo "$Batt_Sysprofile_Stuff"|grep Connected|awk '{print $NF}')
-    Batt_Charging=$(echo "$Batt_Sysprofile_Stuff"|grep Charging|head -n1|awk '{print $NF}')
-    Batt_Charged=$(echo "$Batt_Sysprofile_Stuff"|grep Charged|awk '{print $NF}')
+        # Grab the battery 
+        Batt_List=`ls /proc/acpi/battery/`;
 
-    ## Charge details 
-    Batt_Charge_rem=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Charge remaining" | sed 's/[^0-9]//g')
-    Batt_Charge_cap=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Full Charge Capacity" | sed 's/[^0-9]//g')
-    Batt_Cycle=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Cycle Count" | sed 's/[^0-9]//g')   
-    Batt_Health=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Condition" | awk '{print $NF}')   
+        for Batt in $Batt_List;do 
 
-    Batt_AmperageMA=$(echo "$Batt_Sysprofile_Stuff"|grep -i "Amperage (mA):"|awk '{print $NF}' | sed 's/[^0-9]//g')
-    Batt_VoltageMV=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Voltage (mV):"|awk '{print $NF}' | sed 's/[^0-9]//g')   
+            ## Checking to see about battery status - Yes / No's
+            Batt_Status=`cat /proc/acpi/battery/$Batt/{info,state}|grep "charging state:" |grep -o "[a-z]\+$"`
 
+            ## Charge details 
+            Batt_Charge_rem=`cat /proc/acpi/battery/$Batt/{info,state}|grep remaining|grep -o "[0-9]\+"`
+            Batt_Charge_cap=`cat /proc/acpi/battery/$Batt/{info,state}|grep full |grep -o "[0-9]\+"`
+            Batt_Cycle=`cat /proc/acpi/battery/$Batt/info | grep 'cycle count:' | sed 's/[a-z: ]\+//gI'`
+            Batt_Health=`cat /proc/acpi/battery/$Batt/{info,state}|grep "capacity state:" |grep -o "[a-z]\+$"`
+
+            #descap=`cat /proc/acpi/battery/$Batt/{info,state}|grep "design capacity:" |grep -o "[0-9]\+"`
+            Batt_AmperageMA=`cat /proc/acpi/battery/$Batt/{info,state}|grep "present rate:" |grep -o "[0-9]\+"`
+            Batt_VoltageMV=`cat /proc/acpi/battery/$Batt/{info,state}|grep "present voltage:" |grep -o "[0-9]\+"`
+            
+            ## Conditionals for charging status
+            if [[ "$Batt_Status" == "charging" ]] 
+                then Batt_Status_indicator='+'
+            elif [[ "$Batt_Status" == "discharging" ]] 
+                then Batt_Status_indicator='-'
+            else
+                 Batt_Status_indicator=''
+            fi   
+        done
+
+    elif [[ "$Os" == 'Darwin' ]]; then
+        # Using -l2 because -l1 gave me results with higher then exected load for the 1st second, then less after that
+        Top=$(top -l2 -F -R -u)
+       
+        # CPU info 
+        # not used - top -l2 -F -R  | grep -E 'CPU usage' | tail -n1 | grep -o ".....%" | sed 's/[^0-9.]//g' 
+        Cpu_Perc_Free=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $7}' |cut -c 1-5 |sed 's/%//g')
+        Cpu_Perc_User=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $3}' |cut -c 1-5 |sed 's/%//g')
+        Cpu_Perc_Sys=$(echo "$Top" | grep "CPU usage" | tail -n1|awk '{print $5}' |cut -c 1-5 |sed 's/%//g')
+
+        # Display
+        Display_Brightnes=$( "$Here"/brightness -l |grep brightness|awk '{print $NF}')
+        # Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l)
+        Display_Brightnes_perc=$(echo "$Display_Brightnes"*100 | bc -l|cut -d'.' -f1)
+        if [[ "$Display_Brightnes_perc" == "0" ]]
+            then Display_Brightnes_perc="0"
+        fi
+
+        # Wifi 
+        Wifi_device=$(networksetup -listallhardwareports | grep -E '(Wi-Fi|AirPort)' -A 1 | grep -o "en.")
+        Wifi_Status=$(networksetup -getairportpower "$Wifi_device"| awk '{print $NF}')
+        Wifi_Connected=`networksetup -getinfo Wi-Fi | grep -c 'IP address:'` # 1 = no connection, 2 = connected to network
+        Ping=`curl -s www.google.com > /dev/null &&  echo Connected ||  echo No connection` # not really a ping
+
+        # Ram Usage
+        Ram_Total=`sysctl -n hw.memsize | awk '{print $0/1048576}'`
+        Ram_Used=$(echo "$Top" | grep 'PhysMem' | tail -n1 | awk '{print $8}'| sed 's/M//g')
+        Ram_Free=$(echo "$Ram_Total"-"$Ram_Used" | bc -l)
+     
+        ## System info Battery deets 
+        Batt_Sysprofile_Stuff=$(system_profiler SPPowerDataType)
+
+        ## Checking to see about battery status - Yes / No's
+        Batt_Pluggedin=$(echo "$Batt_Sysprofile_Stuff"|grep Connected|awk '{print $NF}')
+        Batt_Charging=$(echo "$Batt_Sysprofile_Stuff"|grep Charging|head -n1|awk '{print $NF}')
+        Batt_Charged=$(echo "$Batt_Sysprofile_Stuff"|grep Charged|awk '{print $NF}')
+
+        ## Charge details 
+        Batt_Charge_rem=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Charge remaining" | sed 's/[^0-9]//g')
+        Batt_Charge_cap=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Full Charge Capacity" | sed 's/[^0-9]//g')
+        Batt_Cycle=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Cycle Count" | sed 's/[^0-9]//g')   
+        Batt_Health=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Condition" | awk '{print $NF}')   
+
+        Batt_AmperageMA=$(echo "$Batt_Sysprofile_Stuff"|grep -i "Amperage (mA):"|awk '{print $NF}' | sed 's/[^0-9]//g')
+        Batt_VoltageMV=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Voltage (mV):"|awk '{print $NF}' | sed 's/[^0-9]//g')
+        
+        ## Conditionals for charging status
+        if [[ "$Batt_Pluggedin" == "Yes" && "$Batt_Charging" == "Yes" ]] 
+        then
+        	Batt_Status="Charging"
+            Batt_Status_indicator='+'
+        elif [[ "$Batt_Pluggedin" == "Yes" && "$Batt_Charging" == "No" &&  "$Batt_Charged" == "Yes" ]]
+        then
+        	Batt_Status="Charged"
+            Batt_Status_indicator=''
+        else
+        	Batt_Status="Draining"
+            Batt_Status_indicator='-'
+        fi
+    fi
+
+    ## Calcumations for everyone
+
+    # CPU load & usage
+    Cpu_Load_Average1=`uptime | awk '{print $(NF-2)}'`
+    Cpu_Load_Average5=`uptime | awk '{print $(NF-1)}'`
+    Cpu_Load_Average15=`uptime | awk '{print $NF}'`
+
+    Date_Epoch=`date +%s`
+    Date_Nice=`date -r $Date_Epoch +%Y%/%m%/%d%" "%H%:%M%:%S`
+    Date_Short=`date -r $Date_Epoch +%Y%m%d`
+
+    # Ram Calc
+    Ram_Perc_Used=$(echo "$Ram_Used"/"$Ram_Total"*100 | bc -l)
+    Ram_Perc_Used=$(echo "$Ram_Perc_Used" | cut -c 1-5 )
+    Ram_Perc_Free=$(echo "$Ram_Free"/"$Ram_Total"*100 | bc -l)
+    Ram_Perc_Free=$(echo "$Ram_Perc_Free" | cut -c 1-5 )
+
+    # Battery Calc
     POWER=$[$Batt_AmperageMA * $Batt_VoltageMV]
     POWER=$[ $POWER / 1000000 ].$[ ($POWER % 1000000) / 100000 ]
 
@@ -83,104 +183,119 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     Batt_Time_Left_mins=$(echo "$Batt_Time_Left"*60 |bc -l| cut -d'.' -f1)
     Batt_Time_Left_sec=$(echo "$Batt_Time_Left"*3600 |bc -l| cut -d'.' -f1)
 
+    Batt_rem_perc=$(echo "$Batt_Charge_rem"/"$Batt_Charge_cap"*100 | bc -l)
+    Batt_rem_perc=$(echo "$Batt_rem_perc" |cut -c 1-5)
+    Batt_rem_perc_flat=$(echo "$Batt_rem_perc" |cut -d'.' -f1)
 
-    
-    ## Conditionals for charging status
-    if [[ "$Batt_Pluggedin" == "Yes" && "$Batt_Charging" == "Yes" ]] 
-    then
-    	Batt_Status="Charging"
-        Batt_Status_indicator='+'
-    elif [[ "$Batt_Pluggedin" == "Yes" && "$Batt_Charging" == "No" &&  "$Batt_Charged" == "Yes" ]] 
-    then
-    	Batt_Status="Charged"
-        Batt_Status_indicator=''
-    else
-    	Batt_Status="Draining"
-        Batt_Status_indicator='-'
+    hours=$[ $Batt_Time_Left_mins / 60 ]
+    minutes=$[ $Batt_Time_Left_mins - ( $hours * 60) ]
+    length_mins=${#minutes}
+    length_hours=${#hours}
+
+    if [[ "$length_mins" -lt "$min_mins" ]]
+    then minutes="0"$minutes
     fi
-fi
+    if [[ "$length_hours" -lt "$min_hours" ]]
+    then hours="0"
+    fi
+    Batt_Time_Left_time=$(echo "$hours":"$minutes")
 
-## Process for everyone
+    ## If Battery drop's below xx mins
+    if [[ "$Batt_Time_Left_mins" -lt "$Batt_Warn_at" && Batt_Status -eq "Draining" ]]
+    then
+        Batt_Warn="WARN"
+    fi
 
-# CPU load & usage
-Cpu_Load_Average=`w | head -n1 | awk '{print $10}'` 
-Date=`date +%s`
-Nice_date=`date -r $Date +%Y%/%m%/%d%" "%H%:%M%:%S`
-# Ram Calc
-Ram_Perc_Used=$(echo "$Ram_Used"/"$Ram_Total"*100 | bc -l)
-Ram_Perc_Used=$(echo "$Ram_Perc_Used" | cut -c 1-5 )
-Ram_Perc_Free=$(echo "$Ram_Free"/"$Ram_Total"*100 | bc -l)
-Ram_Perc_Free=$(echo "$Ram_Perc_Free" | cut -c 1-5 )
+    # calculate time
+    end_time=`date +%s`
+    exected_in=$[ $end_time - $start_time ]
+ }
 
-# Battery Calc
-Batt_rem_perc=$(echo "$Batt_Charge_rem"/"$Batt_Charge_cap"*100 | bc -l)
-Batt_rem_perc=$(echo "$Batt_rem_perc" |cut -c 1-5)
-Batt_rem_perc_flat=$(echo "$Batt_rem_perc" |cut -d'.' -f1)
-
-hours=$[ $Batt_Time_Left_mins / 60 ]
-minutes=$[ $Batt_Time_Left_mins - ( $hours * 60) ]
-length_mins=${#minutes}
-length_hours=${#hours}
-
-if [[ "$length_mins" -lt "$min_mins" ]]
-then minutes="0"$minutes
-fi
-if [[ "$length_hours" -lt "$min_hours" ]]
-then hours="0"
-fi
-Batt_Time_Left_time=$(echo "$hours":"$minutes")
-
-## If Battery drop's below xx mins
-if [[ "$Batt_Time_Left_mins" -lt "$Batt_Warn_at" && Batt_Status -eq "Draining" ]]
-then
-    Batt_Warn="WARN"
-fi 
-echo $clear
-echo "Battery Percent:   $Batt_rem_perc% ($Batt_Charge_rem mAh / $Batt_Charge_cap mAh)
-Battery Time:      $Batt_Time_Left_time ($Batt_Time_Left_mins mins)
-Battery Health:    $Batt_Health ($Batt_Cycle Charges)
-Battery Status:    $Batt_Status ($POWER watts)
-Wifi:              $Wifi_Status ($Ping)
-Display:           $Display_Brightnes_perc%
-Ram Free:          $Ram_Perc_Free% ($Ram_Free / $Ram_Total)
-CPU Free:          $Cpu_Perc_Free% ($Cpu_Perc_User, $Cpu_Perc_Sys) $Cpu_Load_Average"
-
-echo $Nice_date","$Date","$Batt_Cycle","$Batt_rem_perc","$Batt_Charge_rem","$Batt_Time_Left_mins","$Batt_Time_Left_time","$Batt_Status_indicator$Batt_AmperageMA","$POWER","$Batt_Health","$Batt_Charge_cap","$Batt_Status","$Ram_Total","$Ram_Free","$Ram_Used","$Ram_Perc_Free","$Batt_Warn","$Cpu_Load_Average","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys","$Wifi_Status","$Wifi_Connected","$Ping","$Display_Brightnes_perc >> $Batt_Cycle.txt
-
-}
-function repeat_battery_status {
+function battery_getStatusSimple {
     while [ 0 -le 1 ] 
-    do
-        clear=`clear`
-        get_battery_status $clear
-        sleep 15
+    do     
+        battery_getStatus
+        echo $Clear
+        battery_output
+        battery_log
+        # loop every 15 seconds
+        sleep $[ 15- $exected_in ]
     done
 }
 
+function battery_getStatusStress {
+    echo "not ready yet"
+    while [ 0 -le 1 ] 
+    do
+        # set the brightness to high 
+        $Here/brightness 1.0
+        # echo 75 > /proc/acpi/video/VGA/LCD/brightness # - *nix
+        
+        # Max out the CPU's 
+        # while [ 0 -le 1 ] 
+        # do
+        # #    yes > /dev/null
+        # done
+
+        battery_getStatus
+        echo $Clear
+        battery_output
+        battery_log
+    
+        # loop every 15 seconds 
+        sleep $[ 15- $exected_in ]
+    done
+}
+
+function battery_output {
+    echo "Battery Percent:   $Batt_rem_perc% ($Batt_Charge_rem mAh / $Batt_Charge_cap mAh)
+    Battery Time:      $Batt_Time_Left_time ($Batt_Time_Left_mins mins)
+    Battery Health:    $Batt_Health ($Batt_Cycle Charges)
+    Battery Status:    $Batt_Status ($POWER watts)
+    Wifi:              $Wifi_Status ($Ping)
+    Display:           $Display_Brightnes_perc%
+    Ram Free:          $Ram_Perc_Free% ($Ram_Free / $Ram_Total)
+    CPU Free:          $Cpu_Perc_Free% ($Cpu_Perc_User, $Cpu_Perc_Sys) $Cpu_Load_Average1, $Cpu_Load_Average5, $Cpu_Load_Average15"
+}
+
+function battery_log {
+    # if were writing for the first time, lets add some columns to the csv
+    if [ -f logs/$Date_Short.csv ]
+    then
+        echo $Date_Nice","$Date_Epoch","$Batt_Cycle","$Batt_rem_perc","$Batt_Charge_rem","$Batt_Time_Left_mins","$Batt_Time_Left_time","$Batt_Status_indicator$Batt_AmperageMA","$POWER","$Batt_Health","$Batt_Charge_cap","$Batt_Status","$Ram_Total","$Ram_Free","$Ram_Used","$Ram_Perc_Free","$Batt_Warn","$Cpu_Load_Average1","$Cpu_Load_Average5","$Cpu_Load_Average15","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys","$Wifi_Status","$Wifi_Connected","$Ping","$Display_Brightnes_perc","$exected_in >> logs/$Date_Short.csv
+    else
+        echo " Date Nice, Epoch, Batt Cycle, Batt % remaining, Batt Charge remaining, Batt Time mins, Batt Time HH:MM, Batt AmperageMA, POWER Draw W, Batt Health, Batt Charge capacity, Batt Status, Ram Total, Ram Free, Ram Used, Ram % Free, Batt Warn Status, Cpu Load 1 min, Cpu Load 5 min, Cpu Load 15 min, Cpu % Free, Cpu % Used User, Cpu % Used Sys, Wifi Status, Wifi Connected, Ping, Display Brightnes %, exected in"  > logs/$Date_Short.csv
+        battery_log
+    fi
+}
+
 # Start main program
-if [ ! -n "$1" ]; then
+function battery_help {
     echo ""
-
     echo -n "$0"
-    echo -ne "\033[36m once\033[0m"
-    echo     " - Runs the Battery Logger just once"
-
+    echo     " - Runs the Battery Logger once"
     echo -n "$0"
-    echo -ne "\033[36m repeat\033[0m"
-    echo     " - Runs the Battery Logger until you stop it"
-
+    echo -ne "\033[36m simple\033[0m"
+    echo     " - Runs a battery logger"
+    echo -n "$0"
+    echo -ne "\033[36m stress\033[0m"
+    echo     " - Stresses your computer and logs the battery reaction"
     echo ""
     exit
-fi
-
-
+}
 
 case $1 in
-once)
-    get_battery_status
+'')
+    battery_getStatus
+    battery_output
     ;;
-repeat)
-    repeat_battery_status
+simple)
+    battery_getStatusSimple    
+    ;;
+stress)
+    battery_getStatusStress
+    ;;
+help)
+    battery_help
     ;;
 esac
-
