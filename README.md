@@ -1,7 +1,7 @@
 Battery-Monitor
 ===============
 
-What if you had some data to help understand what usage patterns are actually hurting your battery life?
+What if you had some data to help understand what usage patterns are actually limiting your battery life?
 
 ## battery.sh 
 - Cross-platform *nix & Mac
