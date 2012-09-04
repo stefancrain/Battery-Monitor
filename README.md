@@ -34,6 +34,10 @@ cd /you/path/to/folder
 ```bash
 ./battery.sh 
 ```
+### Check on the battery status once return JSON array
+```bash
+./battery.sh JSON
+```
 
 ### A battery status logger that repeats itself every 15 seconds
 ```bash
@@ -63,7 +67,7 @@ A test of how long your battery would last a minimum by:
 
 ## Data Output 
 ### log/(YYYYMMDD).CSV stores: 
-Date Nice, Epoch, Batt Cycle, Batt remaining %, Batt Charge remaining, Batt Time mins, Batt Time HH:MM, Batt AmperageMA, POWER, Batt Health, Batt Charge capacity, Batt Status, Ram Total, Ram Free, Ram Used, Ram % Free, Batt Warn Status, Cpu Load 1 min, Cpu Load 5 min, Cpu Load 15 min, Cpu % Free, Cpu % Used User, Cpu % Used Sys, Wifi Status, Wifi Connected, Ping, Display Brightnes %, exected in
+Date Nice, Epoch, Batt Cycle, Batt remaining %, Batt Charge remaining, Batt Time mins, Batt Time HH:MM, Batt AmperageMA, POWER, Batt Health, Batt Charge capacity, Batt Status, Ram Total, Ram Free, Ram Used, Ram % Free, Batt Warn Status, Cpu Load 1 min, Cpu Load 5 min, Cpu Load 15 min, Cpu % Free, Cpu % Used User, Cpu % Used Sys, Wifi Status, Wifi Connected, Ping, Display Brightnes %, executed in
 
 ### making graphs from the .csv 
 

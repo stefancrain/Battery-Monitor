@@ -208,7 +208,7 @@ function battery_getStatus {
 
     # calculate time
     end_time=`date +%s`
-    exected_in=$[ $end_time - $start_time ]
+    executed_in=$[ $end_time - $start_time ]
  }
 
 function battery_getStatusSimple {
@@ -219,8 +219,14 @@ function battery_getStatusSimple {
         battery_output
         battery_log
         # loop every 15 seconds
-        sleep $[ 15- $exected_in ]
+        sleep $[ 15- $executed_in ]
     done
+}
+
+function battery_getStatusJSON {
+	# no loop, run once
+    battery_getStatus
+    echo $Date_Nice","$Date_Epoch","$Batt_Cycle","$Batt_rem_perc","$Batt_Charge_rem","$Batt_Time_Left_mins","$Batt_Time_Left_time","$Batt_Status_indicator$Batt_AmperageMA","$POWER","$Batt_Health","$Batt_Charge_cap","$Batt_Status","$Ram_Total","$Ram_Free","$Ram_Used","$Ram_Perc_Free","$Batt_Warn","$Cpu_Load_Average1","$Cpu_Load_Average5","$Cpu_Load_Average15","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys","$Wifi_Status","$Wifi_Connected","$Ping","$Display_Brightnes_perc","$executed_in
 }
 
 function battery_getStatusStress {
@@ -243,7 +249,7 @@ function battery_getStatusStress {
         battery_log
     
         # loop every 15 seconds 
-        sleep $[ 15- $exected_in ]
+        sleep $[ 15- $executed_in ]
     done
 }
 
@@ -262,9 +268,9 @@ function battery_log {
     # if were writing for the first time, lets add some columns to the csv
     if [ -f logs/$Date_Short.csv ]
     then
-        echo $Date_Nice","$Date_Epoch","$Batt_Cycle","$Batt_rem_perc","$Batt_Charge_rem","$Batt_Time_Left_mins","$Batt_Time_Left_time","$Batt_Status_indicator$Batt_AmperageMA","$POWER","$Batt_Health","$Batt_Charge_cap","$Batt_Status","$Ram_Total","$Ram_Free","$Ram_Used","$Ram_Perc_Free","$Batt_Warn","$Cpu_Load_Average1","$Cpu_Load_Average5","$Cpu_Load_Average15","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys","$Wifi_Status","$Wifi_Connected","$Ping","$Display_Brightnes_perc","$exected_in >> logs/$Date_Short.csv
+        echo $Date_Nice","$Date_Epoch","$Batt_Cycle","$Batt_rem_perc","$Batt_Charge_rem","$Batt_Time_Left_mins","$Batt_Time_Left_time","$Batt_Status_indicator$Batt_AmperageMA","$POWER","$Batt_Health","$Batt_Charge_cap","$Batt_Status","$Ram_Total","$Ram_Free","$Ram_Used","$Ram_Perc_Free","$Batt_Warn","$Cpu_Load_Average1","$Cpu_Load_Average5","$Cpu_Load_Average15","$Cpu_Perc_Free","$Cpu_Perc_User","$Cpu_Perc_Sys","$Wifi_Status","$Wifi_Connected","$Ping","$Display_Brightnes_perc","$executed_in >> logs/$Date_Short.csv
     else
-        echo " Date Nice, Epoch, Batt Cycle, Batt % remaining, Batt Charge remaining, Batt Time mins, Batt Time HH:MM, Batt AmperageMA, POWER Draw W, Batt Health, Batt Charge capacity, Batt Status, Ram Total, Ram Free, Ram Used, Ram % Free, Batt Warn Status, Cpu Load 1 min, Cpu Load 5 min, Cpu Load 15 min, Cpu % Free, Cpu % Used User, Cpu % Used Sys, Wifi Status, Wifi Connected, Ping, Display Brightnes %, exected in"  > logs/$Date_Short.csv
+        echo " Date Nice, Epoch, Batt Cycle, Batt % remaining, Batt Charge remaining, Batt Time mins, Batt Time HH:MM, Batt AmperageMA, POWER Draw W, Batt Health, Batt Charge capacity, Batt Status, Ram Total, Ram Free, Ram Used, Ram % Free, Batt Warn Status, Cpu Load 1 min, Cpu Load 5 min, Cpu Load 15 min, Cpu % Free, Cpu % Used User, Cpu % Used Sys, Wifi Status, Wifi Connected, Ping, Display Brightnes %, executed in"  > logs/$Date_Short.csv
         battery_log
     fi
 }
@@ -274,6 +280,9 @@ function battery_help {
     echo ""
     echo -n "$0"
     echo     " - Runs the Battery Logger once"
+    echo -n "$0"
+    echo -ne "\033[36m JSON\033[0m"
+    echo     " - Runs the Battery Logger once Returns JSON encoded array"
     echo -n "$0"
     echo -ne "\033[36m simple\033[0m"
     echo     " - Runs a battery logger"
@@ -292,6 +301,9 @@ case $1 in
 simple)
     battery_getStatusSimple    
     ;;
+JSON)
+	battery_getStatusJSON
+	;;	
 stress)
     battery_getStatusStress
     ;;
