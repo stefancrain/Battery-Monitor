@@ -230,7 +230,7 @@ function battery_getStatusJSON {
 }
 
 function battery_getStatusStress {
-	
+
 	# Get CPU count
 	if [[ "$Os" == 'Linux' ]]; then
 		Cpu_Count=`grep -c 'model name' /proc/cpuinfo`
@@ -240,7 +240,6 @@ function battery_getStatusStress {
 	
     # Max out ALL of the CPU's 
 	num=0
-	
 	while [ $Cpu_Count -le $num ] 
     do
     	yes > /dev/null
@@ -250,15 +249,24 @@ function battery_getStatusStress {
 	# Every 15 seconds, until we kill it. 
     while [ 0 -le 1 ] 
     do
+	
 		
 		if [[ "$Os" == 'Linux' ]]; then
+			
 			# set the brightness to 100 %
 			echo 100 > /proc/acpi/video/VGA/LCD/brightness # - *nix
+			
+			# http://pastebin.com/u7Phms1m
+			# dd if=/dev/zero of=/tmp/test.file bs=1M count=1000
+			# for i in {1..5}; do md5sum /tmp/test.file; done			
+			
 		elif [[ "$Os" == 'Darwin' ]]; then
+			#clear ram 
+			purge
+			
 			# set the brightness to 100 %
 			$Here/brightness 1.0
 		fi
-       
 		# normal logging 
         battery_getStatus
         echo $Clear
