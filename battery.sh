@@ -180,6 +180,9 @@ function battery_getStatus {
     POWER=$[ $POWER / 1000000 ].$[ ($POWER % 1000000) / 100000 ]
 
     Batt_Time_Left=$(echo "$Batt_Charge_rem"/"$Batt_AmperageMA" |bc -l |cut -c 1-5)
+    if [[ "$Batt_Time_Left" -lt "0" ]]
+        then Batt_Time_Left="0"
+    fi
     Batt_Time_Left_mins=$(echo "$Batt_Time_Left"*60 |bc -l| cut -d'.' -f1)
     Batt_Time_Left_sec=$(echo "$Batt_Time_Left"*3600 |bc -l| cut -d'.' -f1)
 
