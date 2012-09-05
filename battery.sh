@@ -1,22 +1,21 @@
 #!/bin/bash
-# A better battery meter for everyone
+# A Better Battery Benchmark
 # Stefan Crain (stefancrain@gmail.com)
 # github.com/stefancrain
 
-# common Vars  
 
-# what os you on ?
+# what os you on?
 Os=`uname`
 
 ## Level of charge in mins to warn the user at.
 Batt_Warn_at="11"
 Batt_Warn="OK"
 
-# standard time formatting
+# Time formatting vars
 min_mins=2
 min_hours=1
 
-# vars for gloabl quick functions
+# Gloabl quick functions
 Clear=`clear`
 Here=`pwd`
 
@@ -71,6 +70,12 @@ function battery_getStatus {
 
         # Grab the battery 
         Batt_List=`ls /proc/acpi/battery/`;
+
+        # no battery?
+        if [[! Batt_List ]] then 
+            echo 'no battery found'
+            exit
+        fi   
 
         for Batt in $Batt_List;do 
 
@@ -138,7 +143,12 @@ function battery_getStatus {
         Batt_Charge_rem=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Charge remaining" | sed 's/[^0-9]//g')
         Batt_Charge_cap=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Full Charge Capacity" | sed 's/[^0-9]//g')
         Batt_Cycle=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Cycle Count" | sed 's/[^0-9]//g')   
-        Batt_Health=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Condition" | awk '{print $NF}')   
+        Batt_Health=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Condition" | awk '{print $NF}')
+        # no battery?
+        if [[! Batt_Health ]] then 
+            echo 'no battery found'
+            exit
+        fi      
 
         Batt_AmperageMA=$(echo "$Batt_Sysprofile_Stuff"|grep -i "Amperage (mA):"|awk '{print $NF}' | sed 's/[^0-9]//g')
         Batt_VoltageMV=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Voltage (mV):"|awk '{print $NF}' | sed 's/[^0-9]//g')
@@ -279,6 +289,8 @@ function battery_getStatusStress {
 }
 function battery_getStatusStress_Stop { 
 	# Kill whatever stress tests we've started 
+# function battery_getStatusStress_Stop { 
+# 	# Kill whatever stress tests we've started 
 
 }
 
