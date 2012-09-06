@@ -1,7 +1,11 @@
 #!/bin/bash
-# A Better Battery Benchmark
-# Stefan Crain (stefancrain@gmail.com)
-# github.com/stefancrain
+######################################################################
+# A Better Battery Benchmark                                         #
+# Displays, Stresses and Logs your battery's performance             #
+# Praticularly Helpful when testing kernel and OS updates            #
+# Fall 2012 Stefan Crain (stefancrain@gmail.com)                     #
+# github.com/stefancrain                                             #
+######################################################################
 
 
 # what os you on?
