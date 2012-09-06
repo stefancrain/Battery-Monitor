@@ -72,9 +72,9 @@ function battery_getStatus {
         Batt_List=`ls /proc/acpi/battery/`;
 
         # no battery?
-        if [[! Batt_List ]] then 
-            echo 'no battery found'
-            exit
+        if [["$Batt_List"== "" ]]
+            then echo 'no battery found' 
+                exit
         fi   
 
         for Batt in $Batt_List;do 
@@ -145,9 +145,9 @@ function battery_getStatus {
         Batt_Cycle=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Cycle Count" | sed 's/[^0-9]//g')   
         Batt_Health=$(echo "$Batt_Sysprofile_Stuff" | grep -i "Condition" | awk '{print $NF}')
         # no battery?
-        if [[! Batt_Health ]] then 
-            echo 'no battery found'
-            exit
+        if [[ "$Batt_Health" == "" ]]
+            then echo 'no battery found' 
+                exit
         fi      
 
         Batt_AmperageMA=$(echo "$Batt_Sysprofile_Stuff"|grep -i "Amperage (mA):"|awk '{print $NF}' | sed 's/[^0-9]//g')
